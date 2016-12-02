@@ -18,16 +18,16 @@
             Canvas not supported; please update your browser.
         </canvas>
         <h4>Damping</h4>
-        <input id="dampSlide" type="range" min="0" max="1" step="0.1" onchange="setDamp('dampSlide','dampText')"/>
-        <input type="text" id="dampText" value="">
+        <input id="dampSlide" type="range" min="0" max="1" step="0.1" value="0" onchange="setDamp('dampSlide','dampText')"/>
+        <input type="text" id="dampText" value="0">
         <br>
         <h4>Driving Amp</h4>
-        <input id="ampSlide" type="range" min="0" max="1" step="0.1" onchange="setAmp('ampSlide','ampText')"/>
-        <input type="text" id="ampText" value="">
+        <input id="ampSlide" type="range" min="0" max="1" step="0.1" value="0" onchange="setAmp('ampSlide','ampText')"/>
+        <input type="text" id="ampText" value="0">
         <br>
         <h4>Driving Freq</h4>
-        <input id="freqSlide" type="range" min="0" max="2" step="0.05" onchange="setFreq('freqSlide','freqText')"/>
-        <input type="text" id="freqText" value="">
+        <input id="freqSlide" type="range" min="0" max="2" step="0.05" value="0" onchange="setFreq('freqSlide','freqText')"/>
+        <input type="text" id="freqText" value="0">
         
         <script>
             var theCanvas = document.getElementById("theCanvas");
