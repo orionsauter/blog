@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Damped-Driven Oscillator</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24px; text-align:center;">
+            Damped-Driven Oscillator
+        </h1>
+        <canvas id="theCanvas" width="500" height="500">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <h4>Damping</h4>
+        <input id="dampSlide" type="range" min="0" max="1" step="0.1" onchange="setDamp('dampSlide','dampText')"/>
+        <input type="text" id="dampText" value="">
+        <br>
+        <h4>Driving Amp</h4>
+        <input id="ampSlide" type="range" min="0" max="1" step="0.1" onchange="setAmp('ampSlide','ampText')"/>
+        <input type="text" id="ampText" value="">
+        <br>
+        <h4>Driving Freq</h4>
+        <input id="freqSlide" type="range" min="0" max="2" step="0.05" onchange="setFreq('freqSlide','freqText')"/>
+        <input type="text" id="freqText" value="">
+        
+        <script>
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            var dt = 0.1;
+            var t = 0;
+            var th = -Math.PI/3;
+            var thdot = 0;
+            var damp = 0;
+            var drA = 0;
+            var drF = 0;
+            var r = 150;
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            moveProjectile();
+            function drawProjectile() {
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                theContext.beginPath();
+                var x = 250 + r*Math.sin(th);
+                var y = 250 + r*Math.cos(th);
+                theContext.moveTo(250,250);
+                theContext.lineTo(x,y);
+                theContext.stroke();
+                theContext.beginPath();
+                theContext.arc(x, y, 10, 0, 2*Math.PI);
+                theContext.fillStyle = "red";
+                theContext.fill();
+            }
+            function moveProjectile() {
+                t += dt
+                var acc = -Math.sin(th) - damp*thdot + drA*Math.sin(drF*t);
+                thdot += acc*dt;
+                th += thdot*dt;
+                drawProjectile();
+                window.setTimeout(moveProjectile, 1000/30);
+            }
+            function setDamp(slideID,textID) {
+                damp = document.getElementById(slideID).value;
+                document.getElementById(textID).value = damp;
+            }
+            function setAmp(slideID,textID) {
+                drA = document.getElementById(slideID).value;
+                document.getElementById(textID).value = drA;
+            }
+            function setFreq(slideID,textID) {
+                drF = document.getElementById(slideID).value;
+                document.getElementById(textID).value = drF;
+            }
+        </script>
+        
+    </body>
+    
+</html>
