@@ -18,16 +18,16 @@
             Canvas not supported; please update your browser.
         </canvas>
         <h4>Damping</h4>
-        <input id="dampSlide" type="range" min="0" max="1" step="0.1" value="0" onchange="setDamp('dampSlide','dampText')"/>
-        <input type="text" id="dampText" value="0">
+        <input id="dampSlide" type="range" min="0" max="1" step="0.1" value="0" oninput="syncValue('dampSlide','dampText')"/>
+        <input type="number" id="dampText" min="0" max="1" step="0.1" value="0" oninput="syncValue('dampText', 'dampSlide')">
         <br>
         <h4>Driving Amp</h4>
-        <input id="ampSlide" type="range" min="0" max="1" step="0.1" value="0" onchange="setAmp('ampSlide','ampText')"/>
-        <input type="text" id="ampText" value="0">
+        <input id="ampSlide" type="range" min="0" max="1" step="0.1" value="0" oninput="syncValue('ampSlide','ampText')"/>
+        <input type="number" id="ampText" min="0" max="1" step="0.1" value="0" oninput="syncValue('ampText', 'ampSlide')">
         <br>
         <h4>Driving Freq</h4>
-        <input id="freqSlide" type="range" min="0" max="2" step="0.05" value="0" onchange="setFreq('freqSlide','freqText')"/>
-        <input type="text" id="freqText" value="0">
+        <input id="freqSlide" type="range" min="0" max="2" step="0.05" value="0" oninput="syncValue('freqSlide','freqText')"/>
+        <input type="number" id="freqText" min="0" max="2" step="0.05" value="0" oninput="syncValue('freqText', 'freqSlide')">
         
         <script>
             var theCanvas = document.getElementById("theCanvas");
@@ -63,17 +63,13 @@
                 drawProjectile();
                 window.setTimeout(moveProjectile, 1000/30);
             }
-            function setDamp(slideID,textID) {
-                damp = document.getElementById(slideID).value;
-                document.getElementById(textID).value = damp;
-            }
-            function setAmp(slideID,textID) {
-                drA = document.getElementById(slideID).value;
-                document.getElementById(textID).value = drA;
-            }
-            function setFreq(slideID,textID) {
-                drF = document.getElementById(slideID).value;
-                document.getElementById(textID).value = drF;
+            function syncValue(sourceID, destinationID) {
+                sourceValue = document.getElementById(sourceID).value;
+                document.getElementById(destinationID).value = sourceValue;
+
+                drF = document.getElementById('freqSlide').value;
+                drA = document.getElementById('ampSlide').value;
+                damp = document.getElementById('dampSlide').value;
             }
         </script>
         
