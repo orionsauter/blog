@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Double Pendulum</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24px; text-align:center;">
+            Double Pendulum
+        </h1>
+        <canvas id="theCanvas" width="500" height="500">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <h4>Amplitude 1</h4>
+        <input id="a1Slide" type="range" min="-1.5" max="1.5" step="0.1" value="0" oninput="syncValue('a1Slide','a1Text')"/>
+        <input type="number" id="a1Text" min="-1.5" max="1.5" step="0.1" value="0" oninput="syncValue('a1Text', 'a1Slide')">
+        <br>
+        <h4>Amplitude 2</h4>
+        <input id="a2Slide" type="range" min="-1.5" max="1.5" step="0.1" value="0" oninput="syncValue('a2Slide','a2Text')"/>
+        <input type="number" id="a2Text" min="-1.5" max="1.5" step="0.1" value="0" oninput="syncValue('a2Text', 'a2Slide')">
+        <br>
+        <h4>Stiffness 1</h4>
+        <input id="k1Slide" type="range" min="0" max="5" step="0.1" value="1" oninput="syncValue('k1Slide','k1Text')"/>
+        <input type="number" id="k1Text" min="0" max="5" step="0.1" value="1" oninput="syncValue('k1Text', 'k1Slide')">
+        <br>
+        <h4>Stiffness 2</h4>
+        <input id="k2Slide" type="range" min="0" max="5" step="0.1" value="1" oninput="syncValue('k2Slide','k2Text')"/>
+        <input type="number" id="k2Text" min="0" max="5" step="0.1" value="1" oninput="syncValue('k2Text', 'k2Slide')">
+        <br>
+        <h4>Tail Length</h4>
+        <input id="lSlide" type="range" min="0.5" max="2" step="0.05" value="1" oninput="syncValue('lSlide','lText')"/>
+        <input type="number" id="lText" min="0.5" max="2" step="0.05" value="1" oninput="syncValue('lText', 'lSlide')">
+        <br>
+        
+        <script>
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            var dt = 0.1;
+            var t = 0;
+            var th1 = 0;
+            var th1dot = 0;
+            var th2 = 0;
+            var th2dot = 0;
+            var a1 = 0;
+            var a2 = 0;
+            var r1 = 0.5;
+            var r2 = 1;
+            var k1 = 1;
+            var k2 = 1;
+            var buttDensity = 10;
+            var tailDensity = 1;
+            var backY = 100;
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            syncValue("lSlide","lText");
+            moveProjectile();
+            function drawProjectile() {
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                theContext.fillText("t = " + Math.round(t),10,10);
+                theContext.beginPath();
+                theContext.moveTo(250,10);
+                theContext.lineTo(250,backY);
+                var x = 250 + 100*r1*Math.sin(th1);
+                var y = backY + 100*r1*Math.cos(th1);
+                theContext.lineTo(x,y);
+                x = x + 100*r2*Math.sin(th1 + th2);
+                y = y + 100*r2*Math.cos(th1 + th2);
+                theContext.lineTo(x,y);
+
+                theContext.lineWidth = 5;
+                theContext.strokeStyle = "blue";
+                theContext.stroke();
+            }
+            function moveProjectile() {
+                t += dt;
+                var I1 = buttDensity * r1 * r1 * r1;
+                var I2 = tailDensity * r2 * r2 * r2;
+                var acc1 = -k1/I1 * th1;
+                var acc2 = -k2/I2 * th2;
+                th1dot = th1dot + acc1*dt;
+                th2dot = th2dot + acc2*dt;
+                th1 = th1 + th1dot*dt;
+                th2 = th2 + th2dot*dt;
+                drawProjectile();
+                window.setTimeout(moveProjectile, 1000/30);
+            }
+            function syncValue(sourceID, destinationID) {
+                sourceValue = document.getElementById(sourceID).value;
+                document.getElementById(destinationID).value = sourceValue;
+
+                t = 0;
+                th1 = parseFloat(document.getElementById('a1Slide').value);
+                th2 = parseFloat(document.getElementById('a2Slide').value);
+                k1 = parseFloat(document.getElementById('k1Slide').value);
+                k2 = parseFloat(document.getElementById('k2Slide').value);
+                th1dot = 0;
+                th2dot = 0;
+                r2 = parseFloat(document.getElementById('lSlide').value);
+            }
+        </script>
+        
+    </body>
+    
+</html>
