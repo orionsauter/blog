@@ -13,7 +13,7 @@ def metro(a, b):
 
 # Time-like Relativistic Interval
 def relat(a, b):
-    dist2 = (a[1] - b[1])**2 - (a[0] - b[0])**2
+    dist2 = (a[0] - b[0])**2 - (a[1] - b[1])**2
     if (dist2 < 0):
         return np.Inf
     else:
