@@ -9,26 +9,35 @@ plt.rcParams['animation.ffmpeg_path'] = '/usr/local/bin/ffmpeg'
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=100, metadata=dict(artist='Me'), bitrate=1800)
 
-N = 16
-L = 10
-m = 10
-dt = 0.01
-th0 = 2*np.pi/5
-k = 200
-g = 980
-mu = 5
-freq = 15
-amp = 15
+N = 15 # Number of segments
+L = 10 # Total length (cm)
+m = 10 # Total mass (g)
+dt = 0.01 # Time step (s)
+th0 = 2*np.pi/5 # Angle of ears
+k = 200 # Stiffness of ears
+g = 980 # Acceleration from gravity (cm/s^2)
+mu = 5 # Damping
+freq = 15 # Stride frequency (Hz)
+amp = 15 # Stride amplitude
+mdist = 'quad' # Mass distribution
 fig, ax = plt.subplots()
 
-th = np.zeros((N, 1))
-th[0,0] = th0
-dth = np.zeros((N, 1))
-dm = m/N
+# Setup
+th = np.zeros(N)
+th[0] = th0
+dth = np.zeros(N)
+if (mdist == 'unif'):
+    dist = np.ones(N)
+elif (mdist == 'lin'):
+    dist = np.arange(N+6, 6, -1)
+elif (mdist == 'quad'):
+    dist = np.arange(N+10, 10, -1)**2
+dm = m*dist/np.sum(dist)
 dL = L/N
 dI = dm*dL**2/3
 ears, = plt.plot([],[],'-')
 
+# Transform angles to (x,y)
 def th2xy(th):
     thtot = np.cumsum(th, axis=0)
     dxy = np.zeros((N, 2))
@@ -38,6 +47,7 @@ def th2xy(th):
     xy = np.cumsum(dxy, axis=0)
     return xy
 
+# Plot segments
 def draw(th):
     fig.clear()
     xy = th2xy(th)
@@ -46,11 +56,25 @@ def draw(th):
     plt.ylim([-0.1, 1.0*L])
     return ears
 
+# Calculate torque
+def torque(frame, th, dth):
+    trq = np.zeros(N)
+    thtot = np.cumsum(th, axis=0)
+    for i in range(N):
+        theta = th[i]
+        if i == 0:
+            theta -= th0
+        trq[i] = -k*theta - dI[i]/4*g*np.cos(thtot[i]) - mu*dth[i]
+    trq[0] += amp*np.sin(freq*frame)
+    return trq
+
+# Init function for animation
 def init():
     plt.xlim([-0.1, 1.0*L])
     plt.ylim([-0.1, 1.0*L])
     return ears,
 
+# Perform integration
 def update(frame, th, dth, ears):
     th += dth*dt
     dth += torque(frame, th, dth)*dt/dI
@@ -58,17 +82,6 @@ def update(frame, th, dth, ears):
     ears.set_data(xy[:,0], xy[:,1])
     return ears,
 
-def torque(frame, th, dth):
-    trq = np.zeros((N, 1))
-    thtot = np.cumsum(th, axis=0)
-    for i in range(N):
-        theta = th[i,0]
-        if i == 0:
-            theta -= th0
-        trq[i,0] = -k*theta - dI/4*g*np.cos(thtot[i,0]) - mu*dth[i,0]
-    trq[0,0] += amp*np.sin(freq*frame)
-    return trq
-
 ani = animation.FuncAnimation(fig, update, frames=np.arange(0, 10, 0.01),
                               init_func=init, fargs=[th, dth, ears], blit=True)
-ani.save('ears.mp4', dpi=100, writer=writer)
+ani.save('ears-'+mdist+'-'+str(k)+'.mp4', dpi=100, writer=writer)
