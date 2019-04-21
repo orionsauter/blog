@@ -6,12 +6,13 @@ import numpy as np
 
 #arcticCirc = 66.5608
 # Antarctica dips outside this, so extend a bit
-arcticCirc = 65
+arcticCirc = 64
 
 tf = tz.TimezoneFinder()
+today = datetime.now()
 
-maxWidth = 0
-widest = ""
+widths = []
+zones = []
 
 for zone in pytz.common_timezones:
     try:
@@ -28,10 +29,10 @@ for zone in pytz.common_timezones:
     if len(lngs) < 1:
         # Skip timezones entirely in the arctic
         continue
-    width = np.max(lngs) - np.min(lngs)
-    if width > maxWidth:
-        maxWidth = width
-        widest = zone
+    width = (np.max(lngs) - np.min(lngs))*24/360
+    zones += [zone]
+    widths += [width]
 
-print(widest + ": " + str(maxWidth*24/360))
+print(zones[np.argmax(widths)])
+print(zones[np.argmin(widths)])
     
