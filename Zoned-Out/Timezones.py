@@ -15,6 +15,8 @@ widths = []
 zones = []
 offsets = []
 verts = []
+nbrs = []
+rates = []
 
 # Consolidate timezones
 for zone in pytz.common_timezones:
@@ -32,22 +34,35 @@ for zone in pytz.common_timezones:
     if len(lngs) < 1:
         # Skip timezones entirely in the arctic
         continue
-    offset = str((timezone(zone).utcoffset(today).total_seconds()/3600 + 24) % 24)
-    if offset in offsets:
-        i = np.argwhere(np.array(offsets)==offset)[0,0]
+    offset = (timezone(zone).utcoffset(today).total_seconds()/3600 + 24) % 24
+    i = np.argwhere(np.array(offsets)==offset)
+    if len(i) > 0:
+        i = i[0,0]
         verts[i] = np.append(verts[i], lngs)
         zones[i] = np.append(zones[i], zone)
     else:
-        offsets += [str(offset)]
+        offsets += [offset]
         verts += [lngs]
         zones += [zone]
 for i in range(len(zones)):
     width = (np.max(verts[i]) - np.min(verts[i]))*24/360
     widths += [width]
+    neighbors = []
+    for j in range(len(zones)):
+        if i==j:
+            continue
+        if len(set(verts[i]) & set(verts[j])) != 0:
+            neighbors += [float(offsets[j])]
+    nbrs += [neighbors]
+    if len(neighbors) > 0:
+        rates += [max(abs(np.array(neighbors)-float(offsets[i])))/width]
+    else:
+        rates += [0]
 
-print(np.array([zones,offsets,widths]))
+#print(np.array([zones,offsets,widths,rates]))
 i = np.argmax(widths)
-print(zones[i],offsets[i],widths[i])
+print(zones[i],offsets[i],widths[i],nbrs[i],rates[i])
 i = np.argmin(widths)
-print(zones[i],offsets[i],widths[i])
+print(zones[i],offsets[i],widths[i],nbrs[i],rates[i])
+print(np.array(zones)[np.array(offsets) % 1 != 0])
     
