@@ -13,7 +13,10 @@ today = datetime.now()
 
 widths = []
 zones = []
+offsets = []
+verts = []
 
+# Consolidate timezones
 for zone in pytz.common_timezones:
     try:
         geo = np.array(tf.get_geometry(tz_name=zone))
@@ -29,10 +32,22 @@ for zone in pytz.common_timezones:
     if len(lngs) < 1:
         # Skip timezones entirely in the arctic
         continue
-    width = (np.max(lngs) - np.min(lngs))*24/360
-    zones += [zone]
+    offset = str((timezone(zone).utcoffset(today).total_seconds()/3600 + 24) % 24)
+    if offset in offsets:
+        i = np.argwhere(np.array(offsets)==offset)[0,0]
+        verts[i] = np.append(verts[i], lngs)
+        zones[i] = np.append(zones[i], zone)
+    else:
+        offsets += [str(offset)]
+        verts += [lngs]
+        zones += [zone]
+for i in range(len(zones)):
+    width = (np.max(verts[i]) - np.min(verts[i]))*24/360
     widths += [width]
 
-print(zones[np.argmax(widths)])
-print(zones[np.argmin(widths)])
+print(np.array([zones,offsets,widths]))
+i = np.argmax(widths)
+print(zones[i],offsets[i],widths[i])
+i = np.argmin(widths)
+print(zones[i],offsets[i],widths[i])
     
