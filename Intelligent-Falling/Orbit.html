@@ -64,8 +64,11 @@
                 theContext.arc(xCent, yCent, msunG/100, 0, 2*Math.PI);
                 theContext.fillStyle = "yellow";
                 theContext.fill();
+                drawProjectile();
             }
             function drawProjectile() {
+                if ((xp - xCent)*(xp - xCent) + (yp - yCent)*(yp - yCent) < (msunG/100)*(msunG/100))
+                    return;
                 if (document.getElementById("forward")) {
                     moveProjectileForward();
                 } else {
@@ -101,7 +104,13 @@
                 sourceValue = document.getElementById(sourceID).value;
                 document.getElementById(destinationID).value = sourceValue;
 
+                var r = msunG/100;
                 msunG = Number(document.getElementById('massSlide').value);
+                theContext.clearRect(xCent-r, yCent-r, 2*r, 2*r);
+                theContext.beginPath();
+                theContext.arc(xCent, yCent, msunG/100, 0, 2*Math.PI);
+                theContext.fillStyle = "yellow";
+                theContext.fill();
             }
         </script>
         
