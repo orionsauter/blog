@@ -73,6 +73,6 @@ if __name__ == "__main__":
     plt.show()
 
     # Same dir    
-    stk = Fold(Fold(Fold(Fold(arr, 2, 2), 1, 2), 1, 1), 1, 1).flatten()
+    stk = Fold(Fold(Fold(Fold(arr, 1, 2), 1, 2), 1, 1), 1, 1).flatten()
     ShowFolds(arr, stk)
     plt.show()
