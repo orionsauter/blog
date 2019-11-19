@@ -14,25 +14,25 @@ def partition(n, denom, prev=[]):
                 yield p
 
 maxVal = 400
-##denomUS = np.array([100, 25, 10, 5, 1])
-##denomEU = np.array([200, 100, 50, 20, 10, 5, 2, 1])
-##statsUS = np.zeros((maxVal, 3))
-##statsEU = np.zeros((maxVal, 3))
-##try:
-##    for n in range(maxVal):
-##        print(n)
-##        combsUS = partition(n, denomUS)
-##        combsEU = partition(n, denomEU)
-##        lensUS = [len(coins) for coins in combsUS]
-##        lensEU = [len(coins) for coins in combsEU]
-##        statsUS[n,:] = [np.min(lensUS), np.median(lensUS), np.mean(lensUS)]
-##        statsEU[n,:] = [np.min(lensEU), np.median(lensEU), np.mean(lensEU)]
-##except:
-##    pass
-##np.savetxt("statsUS.txt", statsUS)
-##np.savetxt("statsEU.txt", statsEU)
-statsUS = np.loadtxt("statsUS.txt")
-statsEU = np.loadtxt("statsEU.txt")
+denomUS = np.array([100, 25, 10, 5, 1])
+denomEU = np.array([200, 100, 50, 20, 10, 5, 2, 1])
+statsUS = np.zeros((maxVal, 3))
+statsEU = np.zeros((maxVal, 3))
+try:
+    for n in range(maxVal):
+        print(n)
+        combsUS = partition(n, denomUS)
+        combsEU = partition(n, denomEU)
+        lensUS = [len(coins) for coins in combsUS]
+        lensEU = [len(coins) for coins in combsEU]
+        statsUS[n,:] = [np.min(lensUS), np.median(lensUS), np.mean(lensUS)]
+        statsEU[n,:] = [np.min(lensEU), np.median(lensEU), np.mean(lensEU)]
+except:
+    pass
+np.savetxt("statsUS.txt", statsUS)
+np.savetxt("statsEU.txt", statsEU)
+##statsUS = np.loadtxt("statsUS.txt")
+##statsEU = np.loadtxt("statsEU.txt")
 
 fig, ax = plt.subplots(figsize=(5,3))
 plt.tight_layout()
