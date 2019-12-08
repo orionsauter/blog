@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Ball Drum</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24px; text-align:center;">
+            Ball Drum
+        </h1>
+        <canvas id="theCanvas" width="400" height="400">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <table>
+            <tr>
+                <td>
+                <h4>Stiffness</h4>
+                <input id="stiffSlide" type="range" min="0" max="1" step="0.1" value="0.2" onchange="setStiff('stiffSlide','stiffText')"/>
+                <input type="text" id="stiffText" value="0.2" size="5">
+                </td>
+                <td>
+                <h4>Strike Amplitude</h4>
+                <input id="ampSlide" type="range" min="0" max="10" step="1" value="5" onchange="setAmp('ampSlide','ampText')"/>
+                <input type="text" id="ampText" value="5" size="5">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                <h4>Bucket Size</h4>
+                <input id="bucketSlide" type="range" min="0" max="1" step="0.05" value="0" onchange="setBucket('bucketSlide','bucketText')"/>
+                <input type="text" id="bucketText" value="0" size="5">
+                </td>
+                <td>
+                <h4>Damping</h4>
+                <input id="dampSlide" type="range" min="0" max="0.05" step="0.001" value="0" onchange="setDamp('dampSlide','dampText')"/>
+                <input type="text" id="dampText" value="0" size="5">
+                </td>
+            </tr>
+        </table>
+        <button onclick="reset()">Reset</button>
+        <button onclick="strike()">Strike</button>
+        </div>
+        
+        <script>
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            var i;
+            var nx = 100;
+            var R = 100;
+            var stiff = 0.2;
+            var amp = 5;
+            var bucket = 0;
+            var damp = 0;
+            var rho = Array(nx);
+            var rho1 = clone(rho);
+            var rho2 = clone(rho);
+            
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            step();
+
+            function clone(arr) {
+                var arrCopy = Array(arr.length);
+                for (i = 0; i < arr.length; i++)
+                    arrCopy[i] = arr[i];
+                return(arrCopy);
+            }
+
+            function mod(n) {
+                return((n+rho.length) % rho.length);
+            }
+
+            function strike() {
+                rho[nx/2] -= amp;
+            }
+
+            function reset() {
+                for (i = 0; i < rho.length; i++)
+                    rho[i] = 0;
+                rho1 = clone(rho);
+                rho2 = clone(rho);
+            }
+
+            function draw() {
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                theContext.beginPath();
+                theContext.moveTo(
+                        theCanvas.width/2+(R+rho[0])*Math.sin(2*Math.PI*0/rho.length),
+                        theCanvas.height/2+(R+rho[0])*Math.cos(2*Math.PI*0/rho.length));
+                for (i = 1; i < rho.length; i++) {
+                    theContext.lineTo(
+                        theCanvas.width/2+(R+rho[i])*Math.sin(2*Math.PI*i/rho.length),
+                        theCanvas.height/2+(R+rho[i])*Math.cos(2*Math.PI*i/rho.length));
+                }
+                theContext.lineTo(
+                    theCanvas.width/2+(R+rho[0])*Math.sin(2*Math.PI*0/rho.length),
+                    theCanvas.height/2+(R+rho[0])*Math.cos(2*Math.PI*0/rho.length));
+                theContext.stroke();
+                if (bucket > 0) {
+                    theContext.beginPath();
+                    theContext.moveTo(
+                        theCanvas.width/2-R*Math.sin(bucket*Math.PI/2),
+                        theCanvas.height/2+R*Math.cos(bucket*Math.PI/2));
+                    theContext.lineTo(
+                        theCanvas.width/2-R*Math.sin(bucket*Math.PI/2),
+                        theCanvas.height);
+                    theContext.stroke();
+                    theContext.beginPath();
+                    theContext.moveTo(
+                        theCanvas.width/2+R*Math.sin(bucket*Math.PI/2),
+                        theCanvas.height/2+R*Math.cos(bucket*Math.PI/2));
+                    theContext.lineTo(
+                        theCanvas.width/2+R*Math.sin(bucket*Math.PI/2),
+                        theCanvas.height);
+                    theContext.stroke();
+                }
+            }
+
+            function step() {
+                rho2 = clone(rho1);
+                rho1 = clone(rho);
+                for (i = 0; i < rho.length; i++) {
+                    rho[i] = stiff * rho1[mod(i-1)] + 
+                        2 * (1 - stiff) * rho1[i] +
+                        stiff * rho1[mod(i+1)] -
+                        rho2[i];
+                    if (bucket > 0) {
+                        rho[Math.round(bucket*rho.length/4)] *= 0.9;
+                        rho[rho.length - 1 - Math.round(bucket*rho.length/4)] *= 0.9;
+                    }
+                    rho[i] *= (1 - damp);
+                }
+                draw();
+                window.setTimeout(step, 1000/30);
+            }
+
+            function setStiff(slideID,textID) {
+                stiff = document.getElementById(slideID).value;
+                document.getElementById(textID).value = stiff;
+            }
+            function setAmp(slideID,textID) {
+                amp = document.getElementById(slideID).value;
+                document.getElementById(textID).value = amp;
+            }
+            function setBucket(slideID,textID) {
+                bucket = document.getElementById(slideID).value;
+                document.getElementById(textID).value = bucket;
+            }
+            function setDamp(slideID,textID) {
+                damp = document.getElementById(slideID).value;
+                document.getElementById(textID).value = damp;
+            }
+        </script>
+        
+    </body>
+    
+</html>
