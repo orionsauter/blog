@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Clap</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15xp; width:600xp;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24xp; text-align:center;">
+            Clap
+        </h1>
+        <div style = "text-align:center;">
+        <canvas id="theCanvas" width="500" height="300">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <h4>Room Depth (meters)</h4>
+        <input id="Slide1" type="range" min="2.0" max="36.5" step="0.75" value="2.0" oninput="syncValue('Slide1','Text1')"/>
+        <input type="number" id="Text1" min="2.0" max="36.5" step="0.75" value="2.0" oninput="syncValue('Text1', 'Slide1')">
+        <br>
+        <h4>Room Opening (degrees)</h4>
+        <input id="Slide2" type="range" min="60" max="130" step="10" value="130" oninput="syncValue('Slide2','Text2')"/>
+        <input type="number" id="Text2" min="600" max="130" step="10" value="130" oninput="syncValue('Text2', 'Slide2')">
+        <br>
+        <h4>Number of Seats</h4>
+        <input type="number" id="seatsText" readonly="true">
+        <br>
+        <h4>Delay (milliseconds)</h4>
+        <input type="number" id="delayText" readonly="true">
+        <br>
+        </div>
+        
+        <script>
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            var dt = 0.001;
+            var t = 0;
+            var c = 343;
+            var rMax = 2.0;
+            var freq = 3.0;
+            var xCent = 0.5*theCanvas.width;
+            var yCent = 0.5*theCanvas.height;
+            var theta = 130*Math.PI/180;
+            var nSeats = Math.floor(rMax*theta/0.5);
+            var arcStart = (Math.PI - theta)/2;
+            var arcStop = arcStart + theta;
+            var scale = theCanvas.width/(2*36.5); // pixels/meter
+            var leftAud = xCent - scale*rMax*Math.sin(theta/2.0);
+            var rightAud = xCent + scale*rMax*Math.sin(theta/2.0);
+            var endAud = scale*rMax*Math.cos(theta/2.0);
+            var T = theCanvas.width/(c*scale);
+            var delay = rMax/c;
+            var error = 2*rMax*Math.sin(theta/2)/c;
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            document.getElementById('seatsText').value = nSeats;
+            document.getElementById('delayText').value = error;
+            drawAll();
+            function drawAll() {
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                step();
+                drawAud();
+                for (var offset = 0; offset < T; offset += T/freq) {
+                    drawWaves(offset);
+                }
+                window.setTimeout(drawAll, 1000/30);
+            }
+            function drawAud() {
+                theContext.strokeStyle = "black";
+                theContext.beginPath();
+                theContext.moveTo(xCent, 0);
+                theContext.lineTo(leftAud, endAud);
+                theContext.stroke();
+                theContext.beginPath();
+                theContext.moveTo(xCent, 0);
+                theContext.lineTo(rightAud, endAud);
+                theContext.stroke();
+                theContext.beginPath();
+                theContext.arc(xCent, 0, scale*rMax, arcStart, arcStop);
+                theContext.stroke();
+            }
+            function drawWaves(offset) {
+                theContext.beginPath();
+                theContext.arc(xCent, 0, scale*c*((t+offset) % T), 0, 2*Math.PI);
+                theContext.strokeStyle = "red";
+                theContext.stroke();
+                theContext.beginPath();
+                theContext.arc(leftAud, endAud, scale*c*((t-delay+offset+T) % T), 0, 2*Math.PI);
+                theContext.strokeStyle = "blue";
+                theContext.stroke();
+            }
+            function step() {
+                t += dt;
+                t %= T;
+            }
+            function syncValue(sourceID, destinationID) {
+                sourceValue = document.getElementById(sourceID).value;
+                document.getElementById(destinationID).value = sourceValue;
+
+                rMax = Number(document.getElementById('Slide1').value);
+                theta = Math.PI*Number(document.getElementById('Slide2').value)/180;
+                nSeats = 0;
+                for (var r = 0; r <= rMax; r += 0.75) {
+                    nSeats += Math.floor(r*theta/0.5);
+                }
+                arcStart = (Math.PI - theta)/2;
+                arcStop = arcStart + theta;
+                leftAud = xCent - scale*rMax*Math.sin(theta/2.0);
+                rightAud = xCent + scale*rMax*Math.sin(theta/2.0);
+                endAud = scale*rMax*Math.cos(theta/2.0);
+                delay = rMax/c;
+                error = Math.round(1000*2*rMax*Math.sin(theta/2)/c);
+                document.getElementById('seatsText').value = nSeats;
+                document.getElementById('delayText').value = error;
+            }
+        </script>
+        
+    </body>
+    
+</html>
