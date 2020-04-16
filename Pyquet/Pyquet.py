@@ -254,6 +254,7 @@ def Round(elder, ynger, quiet=False):
                 fllw.tricks += 1
                 fllw.score += 1
                 lead, fllw = fllw, lead
+                play1, play2 = play2, play1
         else:
             lead.tricks += 1
             
@@ -265,7 +266,7 @@ def Round(elder, ynger, quiet=False):
     lead.score += 1
     if lead.tricks == 12:
         lead.score += 40
-    if fllw.tricks == 12:
+    elif fllw.tricks == 12:
         fllw.score += 40
     elif lead.tricks > fllw.tricks:
         lead.score += 10
@@ -278,10 +279,13 @@ def Round(elder, ynger, quiet=False):
 
 # Play 6 rounds and calculate final winner score
 def Game(p1, p2, quiet):
+    elder = p1
+    ynger = p2
     for sortie in range(6):
-        Round(p1, p2, quiet)
+        Round(elder, ynger, quiet)
         p1.reset()
         p2.reset()
+        elder, ynger = ynger, elder
     if p1.score > p2.score:
         if p2.score > 100:
             return [100 + p1.score - p2.score, 0]
@@ -293,7 +297,8 @@ def Game(p1, p2, quiet):
         else:
             return [0, 100 + p2.score + p1.score]
 
-p1 = Player('One')
-p2 = Player('Two')
-results = np.array([Game(p1, p2, True) for i in range(10)])
-print(np.sum(results, axis=0))
+if __name__ == '__main__':
+    p1 = Player('One')
+    p2 = Player('Two')
+    results = np.array([Game(p1, p2, True) for i in range(10)])
+    print(np.sum(results, axis=0))
