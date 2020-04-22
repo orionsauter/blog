@@ -90,13 +90,7 @@ class Hand(deal.Stack):
 
 class Player:
     def reset(self):
-        # Seen not yet implemented
-        self.seen = dict()
-        for r in RANKS.keys():
-            if RANKS[r] < 7:
-                continue
-            for s in SUITS.keys():
-                self.seen['{} of {}'.format(r, s)] = False
+        self.seen = []
         self.hand = Hand()
         self.tricks = 0
         
@@ -104,10 +98,6 @@ class Player:
         self.name = name
         self.score = 0
         self.reset()
-        if hand is not None:
-            self.hand = hand
-            for card in self.hand:
-                self.seen[str(card)] = True
             
     def __str__(self):
         return '{}\tScore: {}\tHand: {}'.format(self.name,
@@ -185,6 +175,8 @@ def Round(elder, ynger, quiet=False):
         ynger.hand.insert_list(deck.deal(3))
     elder.hand.sort()
     ynger.hand.sort()
+    elder.seen.append(elder.hand)
+    ynger.seen.append(ynger.hand)
     if not quiet:
         print(elder)
         print(ynger)
@@ -246,7 +238,9 @@ def Round(elder, ynger, quiet=False):
     for trick in range(12):
         play1 = lead.pick_trick_card()
         lead.score += 1
+        fllw.seen.append(play1)
         play2 = fllw.pick_trick_card(play1)
+        lead.seen.append(play2)
         if play1.suit == play2.suit:
             if RANKS[play1.value] > RANKS[play2.value]:
                 lead.tricks += 1
