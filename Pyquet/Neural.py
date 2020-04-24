@@ -7,12 +7,20 @@ Dimensions:
 '''
 import numpy as np
 import Pyquet as pq
+from Human import Human
 import pydealer as deal
 import pickle as pkl
+import argparse
+
+parser = argparse.ArgumentParser(description='Train or run a neural net bot.')
+parser.add_argument('--play', action='store_true')
+parser.add_argument('--test', action='store_true')
+args = parser.parse_args()
 
 deck = deal.Deck()
 # Remove 2-6
 _ = deck.deal(20, end='bottom')
+all_cards = deal.Stack(cards=deck)
 
 def card_to_idx(card):
     idx = 8 * (pq.SUITS[card.suit]-1) + pq.RANKS[card.value]-6
@@ -84,11 +92,10 @@ def discount_with_rewards(gradient_log_p, episode_rewards, gamma):
     return gradient_log_p * discounted_episode_rewards
 
 def RoundNeural(elder, ynger, quiet=False):
+
     deck = deal.Deck()
     # Remove 2-6
     _ = deck.deal(20, end='bottom')
-    all_cards = deal.Stack(cards=deck)
-
     deck.shuffle(times=7)
     elder.reset()
     ynger.reset()
@@ -104,7 +111,7 @@ def RoundNeural(elder, ynger, quiet=False):
 
     if not quiet:
         print('Discards')
-        
+
     inds = [card_to_idx(c) for c in elder.hand.cards]
     obs = np.zeros((elder.input_dimensions, 1))
     obs[inds] = 1
@@ -177,13 +184,15 @@ def RoundNeural(elder, ynger, quiet=False):
     lead = elder
     fllw = ynger
     for trick in range(12):
-        bad_inds = [card_to_idx(c) for c in all_cards if c not in lead.hand]
+        bad_inds = [card_to_idx(c) for c in all_cards if c not in lead.hand.cards]
         obs = np.zeros((lead.input_dimensions, 1))
         seen_inds = [card_to_idx(c) + 64 for c in lead.seen]
         obs[seen_inds] = 1
         hidden_layer_values, probs = apply_neural_nets(obs, lead.weights)
         lead.episode_observations.append(obs.T)
         lead.episode_hidden_layer_values.append(hidden_layer_values.T)
+        if np.all(probs == 0):
+            probs = np.ones_like(probs)
         probs[0,bad_inds] = 0
         probs = probs.flatten() / np.sum(probs)
         ind = np.random.choice(range(lead.output_dimensions), p=probs)
@@ -192,10 +201,13 @@ def RoundNeural(elder, ynger, quiet=False):
         loss_function_gradient -= probs
         lead.episode_gradient_log_ps.append(loss_function_gradient.T)
         play1 = idx_to_card[ind]
+        lead.hand = pq.Hand(cards=deal.tools.get_card(lead.hand, str(play1))[0])
         lead.score += 1
         fllw.seen.append(play1)
         
-        bad_inds = [card_to_idx(c) for c in all_cards if c not in fllw.hand]
+        bad_inds = [card_to_idx(c) for c in all_cards if c not in fllw.hand.cards]
+        if any([c.suit == play1.suit for c in fllw.hand]):
+            bad_inds += [card_to_idx(c) for c in all_cards if c.suit != play1.suit]
         obs = np.zeros((fllw.input_dimensions, 1))
         lead_ind = card_to_idx(play1) + 32
         obs[lead_ind] = 1
@@ -204,6 +216,8 @@ def RoundNeural(elder, ynger, quiet=False):
         hidden_layer_values, probs = apply_neural_nets(obs, fllw.weights)
         fllw.episode_observations.append(obs.T)
         fllw.episode_hidden_layer_values.append(hidden_layer_values.T)
+        if np.all(probs == 0):
+            probs = np.ones_like(probs)
         probs[0,bad_inds] = 0
         probs = probs.flatten() / np.sum(probs)
         ind = np.random.choice(range(fllw.output_dimensions), p=probs)
@@ -212,6 +226,7 @@ def RoundNeural(elder, ynger, quiet=False):
         loss_function_gradient -= probs
         fllw.episode_gradient_log_ps.append(loss_function_gradient.T)
         play2 = idx_to_card[ind]
+        fllw.hand = pq.Hand(cards=deal.tools.get_card(fllw.hand, str(play2))[0])
         if play1.suit == play2.suit:
             if pq.RANKS[play1.value] > pq.RANKS[play2.value]:
                 lead.tricks += 1
@@ -270,13 +285,14 @@ class Neural(pq.Player):
                 
         # hyperparameters
         self.episode_number = 0
-        self.batch_size = 10
+        self.batch_size = 20
         self.gamma = 0.99 # discount factor for reward
         self.decay_rate = 0.99
         self.num_hidden_layer_neurons = 200
         self.input_dimensions = 32 * 3
         self.output_dimensions = 32
         self.learning_rate = 1e-4
+        self.memory = 1000
 
         self.reward_sum = 0
         self.running_reward = None
@@ -303,7 +319,9 @@ class Neural(pq.Player):
         inds = [card_to_idx(c) for c in self.hand.cards]
         obs = np.zeros((self.input_dimensions, 1))
         obs[inds] = 1
-        probs = apply_neural_nets(obs, self.weights)
+        hidden_layer_values, probs = apply_neural_nets(obs, self.weights)
+        if np.all(probs == 0):
+            probs = np.ones_like(probs)
         probs = probs.flatten() / np.sum(probs)
         dinds = np.random.choice(range(self.output_dimensions),
                                  p=probs, size=n, replace=False)
@@ -311,17 +329,34 @@ class Neural(pq.Player):
         return discards
 
     def pick_trick_card(self, lead=None):
+        bad_inds = [card_to_idx(c) for c in all_cards if c not in self.hand.cards]
+        if lead is not None and \
+            any([c.suit == lead.suit for c in self.hand.cards]):
+            bad_inds += [card_to_idx(c) for c in all_cards if c.suit != lead.suit]
         obs = np.zeros((self.input_dimensions, 1))
         if lead is not None:
             lead_ind = card_to_idx(lead) + 32
             obs[lead_ind] = 1
         seen_inds = [card_to_idx(c) + 64 for c in self.seen]
         obs[seen_inds] = 1
-        probs = apply_neural_nets(obs, self.weights)
+        hidden_layer_values, probs = apply_neural_nets(obs, self.weights)
+        if np.all(probs == 0):
+            probs = np.ones_like(probs)
+        probs[0,bad_inds] = 0
         probs = probs.flatten() / np.sum(probs)
         ind = np.random.choice(range(self.output_dimensions), p=probs)
         play = idx_to_card[ind]
+        self.hand = pq.Hand(cards=deal.tools.get_card(self.hand, str(play))[0])
         return play
+
+    def trim(self):
+        if len(self.episode_rewards) > self.memory:
+            self.episode_hidden_layer_values = \
+                self.episode_hidden_layer_values[-self.memory:]
+            self.episode_observations = self.episode_observations[-self.memory:]
+            self.episode_gradient_log_ps = \
+                self.episode_gradient_log_ps[-self.memory:]
+            self.episode_rewards = self.episode_rewards[-self.memory:]
 
     def train(self):
 
@@ -333,10 +368,10 @@ class Neural(pq.Player):
             expectation_g_squared[layer_name] = \
                 np.zeros_like(self.weights[layer_name])
             g_dict[layer_name] = np.zeros_like(self.weights[layer_name])
-        
-        while True:
+
             p2 = Neural('Twin', weights=self.weights)
             
+        for n in range(10000):
             elder = self
             ynger = p2
             for sortie in range(6):
@@ -354,6 +389,7 @@ class Neural(pq.Player):
             episode_gradient_log_ps = np.vstack(self.episode_gradient_log_ps)
             episode_rewards = np.array(np.vstack(self.episode_rewards),
                                        dtype=np.float64)
+            self.trim()
 
             # Tweak the gradient of the log_ps based on the discounted rewards
             episode_gradient_log_ps_discounted = \
@@ -372,10 +408,14 @@ class Neural(pq.Player):
                 g_dict[layer_name] += gradient[layer_name]
 
             if self.episode_number % self.batch_size == 0:
+                if (self.episode_number/self.batch_size) % 2 == 0:
+                    p2 = Neural('Twin', weights=self.weights)
+                else:
+                    p2 = Neural('Baby')
                 update_weights(self.weights, expectation_g_squared, g_dict, \
                                self.decay_rate, self.learning_rate)
-                print(self.episode_number,
-                      np.sum(self.episode_rewards[-78:]))
+                print(self.episode_number, self.score)
+                self.score = 0
                 
                 ofile = open('Neural.pkl', 'wb')
                 pkl.dump(self, ofile)
@@ -388,4 +428,12 @@ if __name__ == '__main__':
         ifile.close()
     except FileNotFoundError:
         p1 = Neural('AI')
-    p1.train()
+    if args.play:
+        p2 = Human('Hugh Mann')
+        pq.Game(p2, p1, False)
+    elif args.test:
+        p2 = pq.Player('RandBot')
+        scores = np.array([pq.Game(p1, p2, True) for i in range(100)])
+        print(np.sum(scores, axis=0))
+    else:
+        p1.train()

@@ -38,6 +38,7 @@ class Human(pq.Player):
         self.hand, _ = deal.tools.get_card(self.hand, str(play[0]))
         return play[0]
 
-p1 = Human('Hugh Mann')
-p2 = pq.Player('RandBot')
-pq.Game(p1, p2, False)
+if __name__ == '__main__':
+    p1 = Human('Hugh Mann')
+    p2 = pq.Player('RandBot')
+    pq.Game(p1, p2, False)

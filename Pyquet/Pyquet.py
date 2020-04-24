@@ -175,8 +175,8 @@ def Round(elder, ynger, quiet=False):
         ynger.hand.insert_list(deck.deal(3))
     elder.hand.sort()
     ynger.hand.sort()
-    elder.seen.append(elder.hand)
-    ynger.seen.append(ynger.hand)
+    elder.seen.extend(elder.hand.cards)
+    ynger.seen.extend(ynger.hand.cards)
     if not quiet:
         print(elder)
         print(ynger)
