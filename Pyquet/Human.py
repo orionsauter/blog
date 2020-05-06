@@ -6,6 +6,9 @@ import pydealer as deal
 import Pyquet as pq
 
 class Human(pq.Player):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.isHuman = True
     
     def pick_discards(self, n):
         valid = False

@@ -80,6 +80,11 @@ class Hand(deal.Stack):
         self.cards = deque([c for c in self.cards if c not in to_remove])
         return
 
+    def insert(self, to_insert):
+        self.cards.append(to_insert)
+        self.sort()
+        return
+
     def discard(self, cards, talon):
         nremoved = len(self.cards)
         self.remove(cards)
@@ -96,6 +101,7 @@ class Player:
         
     def __init__(self, name=None, hand=None):
         self.name = name
+        self.isHuman = False
         self.score = 0
         self.reset()
             
