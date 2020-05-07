@@ -1,0 +1,2 @@
+numpy==1.18.1
+pydealer==1.4.0
