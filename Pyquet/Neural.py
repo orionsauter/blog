@@ -274,12 +274,12 @@ def RoundNeural(elder, ynger, quiet=False):
 
 class Neural(pq.Player):
 
-    def __init__(self, name=None, hand=None, weights=None):
-        self.name = name
-        self.score = 0
+    def __init__(self, *args, **kwargs):
+        self.weights = kwargs.pop('weights', None)
+        self.hand = kwargs.pop('hand', None)
+        super().__init__(*args, **kwargs)
         self.reset()
-        if hand is not None:
-            self.hand = hand
+        if self.hand is not None:
             for card in self.hand:
                 self.seen[str(card)] = True
                 
@@ -303,7 +303,7 @@ class Neural(pq.Player):
         self.episode_gradient_log_ps = []
         self.episode_rewards = []
 
-        if weights is None:
+        if self.weights is None:
             self.weights = {
                 '1': np.random.randn(self.num_hidden_layer_neurons,
                     self.input_dimensions) / np.sqrt(self.input_dimensions),
@@ -312,8 +312,6 @@ class Neural(pq.Player):
                                      ) \
                     / np.sqrt(self.num_hidden_layer_neurons)
             }
-        else:
-            self.weights = weights
 
     def pick_discards(self, n):
         inds = [card_to_idx(c) for c in self.hand.cards]

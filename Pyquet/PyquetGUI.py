@@ -36,11 +36,22 @@ class HumanGUI(Human):
         self.pending = []
         self.waiting = True
         self.cimgs = dict()
+        self.opponent = None
+        self.myScore = tk.Text(self.root, width=20)
+        self.myScore.tag_configure("center", justify="center")
+        self.myScore.pack(side=tk.LEFT)
+        self.oppScore = None
         button = ttk.Button(self.root, text='Done',
             command=lambda: setattr(self, 'waiting', False))
         button.place(x=layout['window width']/2,
                      y=layout['button position'])
         super().__init__(*args, **kwargs)
+
+    def setOpponent(self, opp):
+        self.opponent = opp
+        self.oppScore = tk.Text(self.root, width=20)
+        self.oppScore.tag_configure("center", justify="center")
+        self.oppScore.pack(side=tk.RIGHT)
         
     def pick_card(self, card):
         if card in self.hand.cards:
@@ -64,6 +75,7 @@ class HumanGUI(Human):
             button.state = state
             button.place(x=x, y=y)
             self.cimgs[card.abbrev] = button
+        button.lift()
         return button
 
     def showHand(self):
@@ -83,9 +95,22 @@ class HumanGUI(Human):
                         start + layout['card spacing']*i,
                         layout['pending start height'])
 
+    def showScores(self):
+        self.myScore.delete(1.0, "end")
+        self.myScore.insert("end",
+            "{}\n{}".format(self.name, self.score))
+        self.myScore.tag_add("center", 1.0, "end")
+        if self.opponent is not None:
+            self.oppScore.delete(1.0, "end")
+            self.oppScore.insert("end",
+                "{}\n{}".format(self.opponent.name,
+                                self.opponent.score))
+            self.oppScore.tag_add("center", 1.0, "end")
+
     def display(self):
         self.showHand()
         self.showPending()
+        self.showScores()
         self.root.update()
 
     def pick_discards(self, n):
@@ -98,8 +123,6 @@ class HumanGUI(Human):
                 messagebox.showerror('Error', 'Too many discards')
             else:
                 discards = self.pending
-                [self.cimgs.pop(c.abbrev).destroy() for c in self.pending]
-                self.pending = []
                 return discards
 
     def pick_trick_card(self, lead=None):
@@ -120,7 +143,8 @@ class HumanGUI(Human):
             else:
                 play = self.pending[0]
                 self.pending = []
-                self.hand, _ = deal.tools.get_card(self.hand, str(play))
+                self.hand = \
+                    pq.Hand(cards=deal.tools.get_card(self.hand, str(play))[0])
                 return play
 
 cardNames = np.array(['7','8','9','10','Jack','Queen','King','Ace'])
@@ -149,12 +173,19 @@ def Round(elder, ynger):
     ynger.seen.extend(ynger.hand.cards)
 
     discards = elder.pick_discards(5)
+    if elder.isHuman:
+        elder.hand.insert_list(elder.pending)
+        [elder.cimgs.pop(c.abbrev).destroy() for c in elder.pending]
+        elder.pending = []
     elder.hand.discard(discards, deck)
-    print(elder.hand)
     n = len(discards)
     messagebox.showinfo('Discards',
         '{} discarded {} cards. {} remain'.format(elder.name, n, 8-n))
     discards = ynger.pick_discards(8-n)
+    if ynger.isHuman:
+        ynger.hand.insert_list(ynger.pending)
+        [ynger.cimgs.pop(c.abbrev).destroy() for c in ynger.pending]
+        ynger.pending = []
     ynger.hand.discard(discards, deck)
     n = len(discards)
     messagebox.showinfo('Discards',
@@ -246,10 +277,11 @@ def Round(elder, ynger):
                                                             fllw.tricks))
         
         if lead is human:
-            human.cimgs[play2].destroy()
+            human.cimgs.pop(play2.abbrev).destroy()
         else:
-            human.cimgs[play1].destroy()
-        [c.destroy() for c in human.pending]
+            human.cimgs.pop(play1.abbrev).destroy()
+        [human.cimgs.pop(c.abbrev).destroy() for c in human.pending]
+        human.pending = []
         human.root.update()
             
     # Winner of last trick is marked as lead
@@ -262,8 +294,12 @@ def Round(elder, ynger):
         messagebox.showinfo('Tricks', '{} got a capot!'.format(fllw.name))
     elif lead.tricks > fllw.tricks:
         lead.score += 10
+        messagebox.showinfo('Tricks',
+                            '{} won the most trcks.'.format(lead.name))
     elif lead.tricks < fllw.tricks:
         fllw.score += 10
+        messagebox.showinfo('Tricks',
+                            '{} won the most trcks.'.format(fllw.name))
     
     return
 
@@ -287,12 +323,6 @@ def Game(p1, p2):
         else:
             return [0, 100 + p2.score + p1.score]
 
-##if __name__ == '__main__':
-##    p1 = Player('One')
-##    p2 = Player('Two')
-##    results = np.array([Game(p1, p2, True) for i in range(10)])
-##    print(np.sum(results, axis=0))
-
 deck = deal.Deck()
 deck.shuffle(times=7)
 
@@ -301,5 +331,10 @@ root.geometry('{:d}x{:d}'.format(layout['window width'],
                                  layout['window height']))
 p1 = HumanGUI('Hugh Mann', root=root)
 p2 = Neural('NeuroticBot')
-Game(p1, p2)
+p1.setOpponent(p2)
+score = Game(p1, p2)
+messagebox.showinfo('Total Score',
+                    '{}: {}\n{}: {}'.format(p1.name, score[0],
+                                            p2.name, score[1]))
+root.destroy()
 root.mainloop()
