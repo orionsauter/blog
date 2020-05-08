@@ -61,20 +61,26 @@ class Hand(deal.Stack):
     def sequence(self):
         max_seq = 0
         max_rnk = 0
+        max_mgc = 0
         for suit in SUITS.keys():
             ranks = [RANKS[card.value] for card in self.cards
                      if card.suit == suit]
-            if len(ranks) < 2:
+            if len(ranks) == 0:
                 continue
-            runs = [len(list(g)) for k,g in it.groupby(np.diff(ranks))]
-            if np.max(runs) >= max_seq:
-                i = np.argmax(runs)
-                if np.max(runs) == max_seq and \
-                    ranks[np.cumsum(runs)[i]] < max_rnk:
-                    continue
-                max_seq = runs[i]
-                max_rnk = ranks[np.cumsum(runs)[i]]
-        return max_seq+1, max_rnk
+            lastR = ranks[0]
+            slen = 1
+            for r in ranks[1:]:
+                if r - lastR == 1:
+                    slen += 1
+                else:
+                    slen = 1
+                magic = (r + (slen*slen))*slen
+                if magic > max_mgc:
+                    max_seq = slen
+                    max_rnk = r
+                    max_mgc = magic
+                lastR = r
+        return max_seq, max_rnk
 
     def remove(self, to_remove):
         self.cards = deque([c for c in self.cards if c not in to_remove])

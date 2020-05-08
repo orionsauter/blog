@@ -171,7 +171,10 @@ def Round(elder, ynger):
     ynger.hand.sort()
     elder.seen.extend(elder.hand.cards)
     ynger.seen.extend(ynger.hand.cards)
+    human.display()
 
+    if elder.isHuman:
+        messagebox.showinfo('Discards', 'Choose up to 5 cards to discard.')
     discards = elder.pick_discards(5)
     if elder.isHuman:
         elder.hand.insert_list(elder.pending)
@@ -203,22 +206,26 @@ def Round(elder, ynger):
         ynger.score += pt2
         messagebox.showinfo('Declarations',
             '{} won point: {} vs {}.'.format(ynger.name, pt2, pt1))
+    human.display()
 
     # Sequence
     seq1 = elder.hand.sequence()
     seq2 = ynger.hand.sequence()
     magic1, score1 = pq.Score_Sequence(seq1)
     magic2, score2 = pq.Score_Sequence(seq2)
-    if magic1 > magic2:
+    if score1 == 0 and score2 == 0:
+        messagebox.showinfo('Declarations', 'No runs scored')
+    elif magic1 > magic2:
         elder.score += score1
         messagebox.showinfo('Declarations',
             '{} has a run of {} up to {}.'.format(
-                elder.name, seq1[0], cardNames[seq1[1]-7]))
+                elder.name, seq1[0], cardNames[seq1[1]-6]))
     elif magic2 > magic1:
         ynger.score += score2
         messagebox.showinfo('Declarations',
             '{} has a run of {} up to {}.'.format(
-                ynger.name, seq2[0], cardNames[seq2[1]-7]))
+                ynger.name, seq2[0], cardNames[seq2[1]-6]))
+    human.display()
 
     # Tuples
     tup1 = elder.hand.tuples()
@@ -235,6 +242,7 @@ def Round(elder, ynger):
         messagebox.showinfo('Declarations',
             '{} wins tuples:\n'.format(ynger.name) + \
             TupleList(tup2))
+    human.display()
 
     lead = elder
     fllw = ynger
