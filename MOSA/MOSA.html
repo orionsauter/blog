@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>LISA MOSA</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24px; text-align:center;">
+            LISA MOSA
+        </h1>
+        <div align="center">
+            <canvas id="theCanvas" width="400" height="400">
+                Canvas not supported; please update your browser.
+            </canvas>
+            <table style="border-spacing: 0px;text-align:center">
+                <tr>
+                    <td colspan="2">
+                    <h4>MOSA 1</h4>
+                    </td>
+                    <td colspan="2">
+                    <h4>MOSA 2</h4>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                    <button onmousedown="left(1)" onmouseup="stop()">Left</button>
+                    </td>
+                    <td>
+                    <button onmousedown="right(1)" onmouseup="stop()">Right</button>
+                    </td>
+                    <td>
+                    <button onmousedown="left(2)" onmouseup="stop()">Left</button>
+                    </td>
+                    <td>
+                    <button onmousedown="right(2)" onmouseup="stop()">Right</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                    <h4>Mass Ratio</h4>
+                    <input type="number" id="massText"
+                        value="0.1" min="0.00" max="10.0" step="0.05"
+                        onchange="setMass()">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                    <button onclick="reset()">Reset</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <script>
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            var i;
+            var nx = 100;
+            var R = 100;
+            var phi = Array(3);
+            var dphi = 0.005*Math.PI/3;
+            var stepper;
+            var mRatio = 0.1;
+            var Iratio = 1.0/(1.5*mRatio + 2);
+            
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            reset();
+            step();
+
+            function left(mosa) {
+                stepper = setInterval(function() {
+                    for (i = 0; i < 3; i++) {
+                        if (i == mosa) {
+                            phi[i] -= dphi;
+                        } else {
+                            phi[i] += Iratio*dphi;
+                        }
+                    }
+                }, 50);
+            }
+
+            function right(mosa) {
+                stepper = setInterval(function() {
+                    for (i = 0; i < 3; i++) {
+                        if (i == mosa) {
+                            phi[i] += dphi;
+                        } else {
+                            phi[i] -= Iratio*dphi;
+                        }
+                    }
+                }, 50);
+            }
+
+            function stop() {
+                clearInterval(stepper);
+            }
+
+            function reset() {
+                phi[0] = 0.0;
+                phi[1] = -Math.PI/6;
+                phi[2] = Math.PI/6;
+            }
+
+            function draw() {
+                var cx = theCanvas.width/2;
+                var cy = theCanvas.height/2;
+                theContext.lineWidth = 2;
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                // Circle
+                theContext.beginPath();
+                theContext.arc(cx, cy, R, 0, 2*Math.PI);
+                theContext.strokeStyle = "black";
+                theContext.stroke();
+                // Spacecraft front
+                theContext.beginPath();
+                theContext.moveTo(cx, cy);
+                theContext.lineTo(cx+R*Math.sin(phi[0]),cy-R*Math.cos(phi[0]));
+                theContext.strokeStyle = "red";
+                theContext.stroke();
+                // MOSA 1
+                theContext.beginPath();
+                theContext.moveTo(cx, cy);
+                theContext.lineTo(cx+R*Math.sin(phi[1]),cy-R*Math.cos(phi[1]));
+                theContext.strokeStyle = "blue";
+                theContext.stroke();
+                // MOSA 2
+                theContext.beginPath();
+                theContext.moveTo(cx, cy);
+                theContext.lineTo(cx+R*Math.sin(phi[2]),cy-R*Math.cos(phi[2]));
+                theContext.strokeStyle = "blue";
+                theContext.stroke();
+            }
+
+            function step() {
+                draw();
+                window.setTimeout(step, 1000/30);
+            }
+
+            function setMass() {
+                mRatio = document.getElementById("massText").value;
+                Iratio = 1.0/(1.5*mRatio + 2);
+            }
+        </script>
+        
+    </body>
+    
+</html>
