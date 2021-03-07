@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Nuclear Reactor</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24px; text-align:center;">
+            Nuclear Reactor
+        </h1>
+        <canvas id="theCanvas" width="500" height="400">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <div style="text-align:center;">
+        <table width="500">
+            <tr>
+                <td><h4>Control Rods %</h4>
+                <input id="contSlide" type="range" min="0" max="100" step="1" value="100" oninput="syncValue('contSlide','contText')"/>
+                <input type="number" id="contText" min="0" max="100" step="1" value="100" oninput="syncValue('contText', 'contSlide')"></td>
+
+                <td><h4>Feedwater %</h4>
+                <input id="waterSlide" type="range" min="0" max="100" step="1" value="100" oninput="syncValue('waterSlide','waterText')"/>
+                <input type="number" id="waterText" min="0" max="100" step="1" value="100" oninput="syncValue('waterText', 'waterSlide')"></td>
+            </tr>
+        </table>
+        <button onclick="reset()">Reset</button>
+        </div>
+        <br>
+        
+        <script>
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            var spacing = theCanvas.width/3;
+            var barwidth = 50;
+            var margin = 100;
+            var colors = ["#FF0000", "#00FF00", "#0000FF"];
+            var dt = 0.01;
+            var V = 100;
+            var dQ = 0;
+            var P = 0;
+            var T = 0;
+            var F = 100;
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            step();
+            function reset() {
+                V = 100;
+                dQ = 0;
+                P = 0;
+                T = 0;
+                F = 100;
+                syncValue('contText', 'contSlide');
+                syncValue('waterText', 'waterSlide');
+                step();
+            }
+            function drawBar(idx, value, label) {
+                cornerx = (idx+0.5)*spacing - barwidth/2;
+                cornery = theCanvas.height - margin - value;
+                theContext.fillStyle = colors[idx];
+                theContext.fillRect(cornerx, cornery, barwidth, value);
+                theContext.font = "18px Ariel";
+                theContext.fillStyle = "black";
+                theContext.textAlign = "center";
+                theContext.fillText(label, cornerx + barwidth/2, theCanvas.height - margin/2);
+            }
+            function drawChart() {
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                drawBar(0, 2*T, "Fuel Temp.");
+                drawBar(1, 2*dQ, "Power Output");
+                drawBar(2, 2*V, "Water Level");
+                theContext.moveTo(0.5*spacing - barwidth/2,
+                                  theCanvas.height - (margin + 200));
+                theContext.lineTo(0.5*spacing + barwidth/2,
+                                  theCanvas.height - (margin + 200));
+                theContext.strokeStyle = "red";
+                theContext.setLineDash([5, 3]);
+                theContext.stroke();
+            }
+            function step() {
+                dQ = V * T;
+                var dV = F - dQ;
+                if (V + dV*dt < 0) {
+                    dV = -V/dt;
+                    dQ = F - dV;
+                }
+                var dT = P - dQ;
+                T += dT*dt;
+                V += dV*dt;
+                if (V < 0) {
+                    V = 0;
+                } else if (V > 100) {
+                    V = 100;
+                }
+                drawChart()
+                if (T < 100) {
+                    window.setTimeout(step, 1000/30);
+                } else {
+                    theContext.font = "30px Impact";
+                    theContext.fillStyle = "black";
+                    theContext.textAlign = "center";
+                    theContext.fillText("MELTDOWN", theCanvas.width/2, theCanvas.height/2);
+                }
+            }
+            function syncValue(sourceID, destinationID) {
+                sourceValue = document.getElementById(sourceID).value;
+                document.getElementById(destinationID).value = sourceValue;
+
+                P = 100 - document.getElementById('contSlide').value;
+                F = document.getElementById('waterSlide').value;
+            }
+        </script>
+        
+    </body>
+    
+</html>
