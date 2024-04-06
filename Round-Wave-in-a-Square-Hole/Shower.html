@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Shower</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <h1 style="font-size:24px; text-align:center;">
+            Shower
+        </h1>
+        <center>
+        <canvas id="theCanvas" width="200" height="200">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <br/>
+        <button onclick="reset()">Reset</button>
+        </center>
+        </div>
+        
+        <script>
+            const concat = (xs, ys) => xs.concat(ys);
+            var theCanvas = document.getElementById("theCanvas");
+            var theContext = theCanvas.getContext("2d");
+            // https://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse
+            document.addEventListener('mousemove', draw);
+            document.addEventListener('mousedown', draw);
+            document.addEventListener('mouseup', drawImage);
+            document.addEventListener('mouseenter', setPosition);
+            // Position on canvas on screen
+            var rect = theCanvas.getBoundingClientRect();
+            var i;
+            var j;
+            var nx = 40;
+            var ny = 40;
+            var scale = 5;
+            var image = theContext.createImageData(nx*scale, ny*scale);
+            var pos = {x: 0, y: 0};
+            var width = 5;
+            var clock;
+            var stiff = 0.2;
+            var amp = 5;
+            var bucket = 0;
+            var damp = 0;
+            var rho = Array(ny); // Height of water
+            for (i = 0; i < ny; i++) {
+                rho[i] = Array(nx);
+                for (j = 0; j < rho[i].length; j++) {
+                    rho[i][j] = 0;
+                }
+            }
+            var rho1 = clone(rho); // Velocity of water
+            var rho2 = clone(rho); // Acceleration of water
+            
+            theCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            step();
+
+            function clone(arr) {
+                var arrCopy = Array(arr.length);
+                for (i = 0; i < arr.length; i++) {
+                    arrCopy[i] = Array(arr[i].length);
+                    for (j = 0; j < arr[i].length; j++) {
+                        arrCopy[i][j] = arr[i][j];
+                    }
+                }
+                return(arrCopy);
+            }
+
+            function reset() {
+                for (i = 0; i < ny; i++) {
+                    for (j = 0; j < rho[i].length; j++) {
+                        rho[i][j] = 0;
+                        rho1[i][j] = 0;
+                        rho2[i][j] = 0;
+                    }
+                }
+                step();
+            }
+
+            // Mirror points at edges (not mod)
+            function mod(i, n) {
+                if (i < 0) return -i;
+                if (i >= n) return 2*n-i-1;
+                return i;
+            }
+
+            // new position from mouse event
+            function setPosition(e) {
+                // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
+                if ((e.clientX < rect.left) || (e.clientX >= rect.right)) {
+                    return;
+                }
+                if ((e.clientY < rect.top) || (e.clientY >= rect.bottom)) {
+                    return;
+                }
+                pos.x = Math.floor(e.clientX - rect.left);
+                pos.y = Math.floor(e.clientY - rect.top);
+            }
+
+            function draw(e) {
+                // mouse left button must be pressed
+                if (e.buttons == 1) {
+                    // Pause integration while drawing
+                    window.clearTimeout(clock);
+
+                    theContext.beginPath(); // begin
+
+                    theContext.lineWidth = 2;
+                    theContext.lineCap = 'round';
+                    theContext.strokeStyle = '#c0392b';
+
+                    theContext.moveTo(pos.x, pos.y); // from
+                    setPosition(e);
+                    theContext.lineTo(pos.x, pos.y); // to
+
+                    theContext.stroke(); // draw it!
+                    rho[Math.floor(pos.y/scale)][Math.floor(pos.x/scale)] = amp;
+                } else {
+                    setPosition(e);
+                }
+            }
+            
+            // Scale up rho array to fill canvas
+            function drawImage(e) {
+                theContext.clearRect(0, 0, theCanvas.width, theCanvas.height);
+                for (var i = 0; i < rho.length; i++) {
+                    for (var j = 0; j < rho[0].length; j++) {
+                        for (var si = 0; si < scale; si++) {
+                            for (var sj = 0; sj < scale; sj++) {
+                                var newi = i*scale+si;
+                                var newj = j*scale+sj;
+                                var flati = newi*rho.length*scale+newj;
+                                image.data[4*flati] = 0;
+                                image.data[4*flati+1] = (rho[i][j]+10)*255/20;
+                                image.data[4*flati+2] = (rho[i][j]+10)*255/20;
+                                image.data[4*flati+3] = 255;
+                            }
+                        }
+                    }
+                }
+                theContext.putImageData(image, 0, 0);
+                if (e) {
+                    step();
+                }
+            }
+
+            function step() {
+                // Velocity -> Height
+                for (i = 0; i < rho.length; i++) {
+                    for (j = 0; j < rho[i].length; j++) {
+                        rho[i][j] += rho1[i][j];
+                    }
+                }
+                // Height -> Acceleration
+                for (i = 0; i < rho.length; i++) {
+                    for (j = 0; j < rho[i].length; j++) {
+                        rho2[i][j] = 0.1*(stiff * rho[mod(i-1,ny)][j] + 
+                            stiff * rho[mod(i+1,ny)][j] + 
+                            stiff * rho[i][mod(j-1,nx)] + 
+                            stiff * rho[i][mod(j+1,nx)] - 
+                            4 * stiff * rho[i][j] - damp*rho1[i][j]);
+                    }
+                }
+                // Acceleration -> Velocity
+                for (i = 0; i < rho.length; i++) {
+                    for (j = 0; j < rho[i].length; j++) {
+                        rho1[i][j] += rho2[i][j];
+                    }
+                }
+                drawImage(null);
+                clock = window.setTimeout(step, 1000/30);
+            }
+        </script>
+        
+    </body>
+    
+</html>
