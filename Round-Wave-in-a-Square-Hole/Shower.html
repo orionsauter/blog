@@ -72,7 +72,7 @@
             }
 
             function reset() {
-                for (i = 0; i < ny; i++) {
+                for (i = 0; i < rho.length; i++) {
                     for (j = 0; j < rho[i].length; j++) {
                         rho[i][j] = 0;
                         rho1[i][j] = 0;
@@ -91,15 +91,19 @@
 
             // new position from mouse event
             function setPosition(e) {
+                // https://stackoverflow.com/questions/3464876/javascript-get-window-x-y-position-for-scroll
+                var doc = document.documentElement;
+                var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
+                var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
                 // https://stackoverflow.com/questions/17130395/real-mouse-position-in-canvas
-                if ((e.clientX < rect.left) || (e.clientX >= rect.right)) {
+                if ((e.clientX < rect.left - left) || (e.clientX >= rect.right - left)) {
                     return;
                 }
-                if ((e.clientY < rect.top) || (e.clientY >= rect.bottom)) {
+                if ((e.clientY < rect.top - top) || (e.clientY >= rect.bottom - top)) {
                     return;
                 }
-                pos.x = Math.floor(e.clientX - rect.left);
-                pos.y = Math.floor(e.clientY - rect.top);
+                pos.x = Math.floor(e.clientX - rect.left + left);
+                pos.y = Math.floor(e.clientY - rect.top + top);
             }
 
             function draw(e) {
