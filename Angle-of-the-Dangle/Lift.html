@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+            <title>Hoyer Lift</title>
+    </head>
+    
+    <body style="font-family:sans-serif; font-size:15px; width:600px;
+        margin-left:auto; margin-right:auto;
+        background-color:#e0e0e0;">
+        
+        <canvas id="liftCanvas" width="500" height="500">
+            Canvas not supported; please update your browser.
+        </canvas>
+        <table width="100%">
+            <tr><td align="center">
+                <h4>a</h4>
+                <input id="aSlide" type="range" min="0.25" max="1" step="0.025" value="0.5"/>
+                <input type="text" id="aText" value="0.5">
+            </td>
+            <td align="center">
+                <h4>b</h4>
+                <input id="bSlide" type="range" min="0.25" max="1" step="0.025" value="0.5"/>
+                <input type="text" id="bText" value="0.5">
+            </td></tr>
+            <tr><td align="center">
+                <h4>h</h4>
+                <input id="hSlide" type="range" min="0" max="1" step="0.025" value="0.5"/>
+                <input type="text" id="hText" value="0.5">
+            </td>
+            <td align="center">
+                <h4>theta</h4>
+                <input id="tSlide" type="range" min="45" max="180" step="0.1" value="90"/>
+                <input type="text" id="tText" value="90">
+            </td></tr>
+        <br>
+        
+        <br>
+        
+        <script>
+            var liftCanvas = document.getElementById("liftCanvas");
+            var liftContext = liftCanvas.getContext("2d");
+            var L = 1.0;
+            var a = 0.5;
+            var b = 0.5;
+            var h = 0.5;
+            var th = 90;
+            var o = [250,50];
+            var scale = 400/L;
+            var pts;
+            var xfm = [[],[],[],[]];
+            var psi;
+            var x;
+            var y;
+            var m;
+            var n;
+            var hang;
+            var chang;
+            var shang;
+            liftCanvas.style.backgroundColor = 'rgba(255, 255, 255, 1.0)';
+            drawLift();
+            function drawLift() {
+                setVars();
+                let cth = Math.cos(Math.PI*th/180);
+                let sth = Math.sin(Math.PI*th/180);
+                let eps = 1e-6;
+                let w2 = h*h + (L-h)**2 - h*(L-h)*cth;
+                let w = Math.sqrt(w2);
+                let cphi = (a*a+b*b-w2)/(a*b);
+                let phi = Math.acos(cphi);
+                let sphi = Math.sin(phi);
+                let beta = Math.asin(b*sphi/w);
+                let eta = Math.asin((L-h)*sth/w);
+                let alpha = Math.PI - beta - phi;
+                let xfun = function(x) {
+                    let y2 = (h*h-(x-a)**2);
+                    return (b*cphi-x)**2 + (b*sphi-Math.sqrt(y2))**2 - (L-h)**2;
+                }
+                x = bisect((b*cphi+h/2)*1.01, false, (a+h)*0.99, false, xfun, eps);
+                y = Math.sqrt(h*h-(x-a)**2);
+                if (isNaN(x)|isNaN(y)) {
+                    liftContext.font = "30px Ariel";
+                    liftContext.fillStyle = "black";
+                    liftContext.textAlign = "center";
+                    liftContext.fillText("No Solution", liftCanvas.width/2, liftCanvas.height/2);
+                    window.setTimeout(drawLift, 1000/30);
+                    return;
+                }
+                pts = [
+                    [a*scale,0],
+                    [x*scale,y*scale],
+                    [b*cphi*scale,b*sphi*scale],
+                    [0,0]
+                ];
+                if (h >= 0.5*L) {
+                    m = a+(x-a)*0.5*L/h;
+                    n = y*0.5*L/h;
+                } else {
+                    m = b*cphi+(x-b*cphi)*0.5*L/(L-h);
+                    n = b*sphi+(y-b*sphi)*0.5*L/(L-h);
+                }
+                hang = 0.5*Math.PI-Math.atan2(n, m);
+                chang = Math.cos(hang);
+                shang = Math.sin(hang);
+                
+                let colors = ["black","red","red","black"];
+                let widths = [2,4,4,2];
+                liftContext.clearRect(0, 0, liftCanvas.width, liftCanvas.height);
+                let prev = o;
+                for (let i = 0; i < pts.length; i++) {
+                    xfm[i] = [o[0]-pts[i][0]*chang+pts[i][1]*shang,
+                              o[1]+pts[i][0]*shang+pts[i][1]*chang];
+                    liftContext.beginPath();
+                    liftContext.moveTo(prev[0],prev[1]);
+                    liftContext.strokeStyle = colors[i];
+                    liftContext.lineWidth = widths[i];
+                    liftContext.lineTo(xfm[i][0], xfm[i][1]);
+                    liftContext.stroke();
+                    prev = xfm[i];
+                }
+                // let back = Math.round(Math.atan2(xfm[1][1]-xfm[2][1],xfm[2][0]-xfm[1][0])*180/Math.PI);
+                // liftContext.font = "24px Ariel";
+                // liftContext.fillStyle = "black";
+                // liftContext.textAlign = "center";
+                // liftContext.fillText("Back Angle: "+back.toString()+"°", liftCanvas.width/2, liftCanvas.height-50);
+                window.setTimeout(drawLift, 1000/30);
+            }
+            function bisect(lp, lv, rp, rv, fun, eps) {
+                if (!lv) {
+                    lv = fun(lp);
+                }
+                if (Math.abs(lv) < eps) {
+                    return lp;
+                }
+                if (!rv) {
+                    rv = fun(rp);
+                }
+                if (Math.abs(rv) < eps) {
+                    return rp;
+                }
+                mp = 0.5*(lp+rp);
+                if (rp-lp < eps) {
+                    return mp;
+                }
+                mv = fun(mp);
+                if (lv*mv < 0) {
+                    return bisect(lp, lv, mp, mv, fun, eps);
+                }
+                if (rv*mv < 0) {
+                    return bisect(mp, mv, rp, rv, fun, eps);
+                }
+                // console.log([lp,rp,lv,rv,mv])
+                return -1;
+            }
+            function setVars() {
+                // document.getElementById(textID).value = document.getElementById(slideID).value;
+                document.getElementById('aText').value = document.getElementById('aSlide').value;
+                document.getElementById('bText').value = document.getElementById('bSlide').value;
+                document.getElementById('hText').value = document.getElementById('hSlide').value;
+                document.getElementById('tText').value = document.getElementById('tSlide').value;
+                a = parseFloat(document.getElementById('aSlide').value);
+                b = parseFloat(document.getElementById('bSlide').value);
+                h = parseFloat(document.getElementById('hSlide').value);
+                th = parseFloat(document.getElementById('tSlide').value);
+                // drawLift();
+            }
+        </script>
+        
+    </body>
+    
+</html>
