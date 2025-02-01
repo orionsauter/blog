@@ -1,0 +1,6 @@
+astropy==5.3.4
+matplotlib==3.7.3
+numpy==2.2.2
+pandas==2.2.3
+poliastro==0.17.0
+tqdm==4.67.1
