@@ -1,0 +1,5 @@
+matplotlib==3.7.3
+networkx==3.4.2
+numpy==2.2.3
+pandas==2.2.3
+tqdm==4.67.1
